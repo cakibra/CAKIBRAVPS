@@ -22,7 +22,6 @@ jobs:
       CI: true
       RUST_BACKTRACE: "1"
       NPM_CONFIG_PRODUCTION: "false"
-      npm_config_production: "false"
       NODE_ENV: development
 
     steps:
@@ -68,12 +67,12 @@ jobs:
         run: |
           if (!(Test-Path ".\node_modules\.bin\tsc.cmd")) {
             Write-Host "Contents of node_modules/.bin:"
-            Get-ChildItem .\node_modules\.bin | Select-Object Name
+            if (Test-Path ".\node_modules\.bin") { Get-ChildItem .\node_modules\.bin | Select-Object Name }
             throw "tsc.cmd is missing after npm ci"
           }
           if (!(Test-Path ".\node_modules\.bin\tauri.cmd")) {
             Write-Host "Contents of node_modules/.bin:"
-            Get-ChildItem .\node_modules\.bin | Select-Object Name
+            if (Test-Path ".\node_modules\.bin") { Get-ChildItem .\node_modules\.bin | Select-Object Name }
             throw "tauri.cmd is missing after npm ci"
           }
           .\node_modules\.bin\tsc.cmd --version
