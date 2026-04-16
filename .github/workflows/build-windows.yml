@@ -15,9 +15,15 @@ jobs:
   build-windows:
     runs-on: windows-2022
     timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
     env:
       CI: true
       RUST_BACKTRACE: "1"
+      NPM_CONFIG_PRODUCTION: "false"
+      npm_config_production: "false"
+      NODE_ENV: development
 
     steps:
       - name: Checkout repository
@@ -38,7 +44,6 @@ jobs:
           workspaces: ./src-tauri -> target
 
       - name: Install NSIS
-        shell: pwsh
         run: |
           choco install nsis --no-progress -y
           $nsisPath = "C:\Program Files (x86)\NSIS"
@@ -47,7 +52,6 @@ jobs:
           }
 
       - name: Print tool versions
-        shell: pwsh
         run: |
           node --version
           npm --version
@@ -56,18 +60,26 @@ jobs:
           makensis -VERSION
 
       - name: Install frontend dependencies
-        run: npm ci --no-audit --no-fund
+        run: |
+          npm config delete production
+          npm ci --include=dev --no-audit --no-fund
 
       - name: Verify local toolchain
-        shell: pwsh
         run: |
-          if (!(Test-Path ".\\node_modules\\.bin\\tsc.cmd")) { throw "tsc.cmd is missing after npm ci" }
-          if (!(Test-Path ".\\node_modules\\.bin\\tauri.cmd")) { throw "tauri.cmd is missing after npm ci" }
-          .\\node_modules\\.bin\\tsc.cmd --version
-          .\\node_modules\\.bin\\tauri.cmd --version
+          if (!(Test-Path ".\node_modules\.bin\tsc.cmd")) {
+            Write-Host "Contents of node_modules/.bin:"
+            Get-ChildItem .\node_modules\.bin | Select-Object Name
+            throw "tsc.cmd is missing after npm ci"
+          }
+          if (!(Test-Path ".\node_modules\.bin\tauri.cmd")) {
+            Write-Host "Contents of node_modules/.bin:"
+            Get-ChildItem .\node_modules\.bin | Select-Object Name
+            throw "tauri.cmd is missing after npm ci"
+          }
+          .\node_modules\.bin\tsc.cmd --version
+          .\node_modules\.bin\tauri.cmd --version
 
       - name: Download sing-box sidecar
-        shell: pwsh
         run: |
           ./scripts/download-singbox.ps1
           if (!(Test-Path "./src-tauri/resources/bin/sing-box.exe")) {
@@ -75,14 +87,13 @@ jobs:
           }
 
       - name: TypeScript check
-        run: npm run lint:check
+        run: .\node_modules\.bin\tsc.cmd --noEmit
 
       - name: Build frontend
         run: npm run build
 
       - name: Build Windows installer
-        shell: pwsh
-        run: .\\node_modules\\.bin\\tauri.cmd build -- --bundles nsis
+        run: .\node_modules\.bin\tauri.cmd build -- --bundles nsis
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
