@@ -58,30 +58,46 @@ jobs:
           cargo --version
           makensis -VERSION
 
-      - name: Install frontend dependencies
+      - name: Install project dependencies
         run: |
           npm config delete production
           npm ci --include=dev --no-audit --no-fund
 
-      - name: Verify local toolchain
+      - name: Force-install local build toolchain
+        run: |
+          npm install --no-save --no-audit --no-fund `
+            typescript@^5.8.3 `
+            vite@^6.3.5 `
+            @tauri-apps/cli@^2.8.0 `
+            @vitejs/plugin-react@^4.4.1 `
+            @types/react@^18.3.18 `
+            @types/react-dom@^18.3.5
+
+      - name: Verify local binaries
         run: |
           if (!(Test-Path ".\node_modules\.bin\tsc.cmd")) {
             Write-Host "Contents of node_modules/.bin:"
             if (Test-Path ".\node_modules\.bin") { Get-ChildItem .\node_modules\.bin | Select-Object Name }
-            throw "tsc.cmd is missing after npm ci"
+            throw "tsc.cmd is missing after dependency installation"
+          }
+          if (!(Test-Path ".\node_modules\.bin\vite.cmd")) {
+            Write-Host "Contents of node_modules/.bin:"
+            if (Test-Path ".\node_modules\.bin") { Get-ChildItem .\node_modules\.bin | Select-Object Name }
+            throw "vite.cmd is missing after dependency installation"
           }
           if (!(Test-Path ".\node_modules\.bin\tauri.cmd")) {
             Write-Host "Contents of node_modules/.bin:"
             if (Test-Path ".\node_modules\.bin") { Get-ChildItem .\node_modules\.bin | Select-Object Name }
-            throw "tauri.cmd is missing after npm ci"
+            throw "tauri.cmd is missing after dependency installation"
           }
           .\node_modules\.bin\tsc.cmd --version
+          .\node_modules\.bin\vite.cmd --version
           .\node_modules\.bin\tauri.cmd --version
 
       - name: Download sing-box sidecar
         run: |
           ./scripts/download-singbox.ps1
-          if (!(Test-Path "./src-tauri/resources/bin/sing-box.exe")) {
+          if (!(Test-Path ".\src-tauri\resources\bin\sing-box.exe")) {
             throw "sing-box.exe was not downloaded"
           }
 
