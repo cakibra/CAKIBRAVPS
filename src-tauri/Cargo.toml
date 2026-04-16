@@ -2,8 +2,8 @@
 name = "cakibra-sbp"
 version = "0.1.0"
 description = "CAKIBRA SBP"
-authors = ["OpenAI"]
-edition = "2021"
+authors = ["CAKIBRATEAM"]
+edition = "2026"
 
 [lib]
 name = "cakibra_sbp_lib"
