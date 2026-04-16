@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 60
     env:
       CI: true
-      NPM_CONFIG_PRODUCTION: "false"
+      RUST_BACKTRACE: "1"
 
     steps:
       - name: Checkout repository
@@ -46,21 +46,43 @@ jobs:
             Add-Content -Path $env:GITHUB_PATH -Value $nsisPath
           }
 
-      - name: Install frontend dependencies
-        run: npm ci --include=dev
+      - name: Print tool versions
+        shell: pwsh
+        run: |
+          node --version
+          npm --version
+          rustc --version
+          cargo --version
+          makensis -VERSION
 
-      - name: Verify TypeScript
-        run: npm exec tsc -- --version
+      - name: Install frontend dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify local toolchain
+        shell: pwsh
+        run: |
+          if (!(Test-Path ".\\node_modules\\.bin\\tsc.cmd")) { throw "tsc.cmd is missing after npm ci" }
+          if (!(Test-Path ".\\node_modules\\.bin\\tauri.cmd")) { throw "tauri.cmd is missing after npm ci" }
+          .\\node_modules\\.bin\\tsc.cmd --version
+          .\\node_modules\\.bin\\tauri.cmd --version
 
       - name: Download sing-box sidecar
         shell: pwsh
-        run: ./scripts/download-singbox.ps1
+        run: |
+          ./scripts/download-singbox.ps1
+          if (!(Test-Path "./src-tauri/resources/bin/sing-box.exe")) {
+            throw "sing-box.exe was not downloaded"
+          }
 
       - name: TypeScript check
-        run: npm exec tsc -- --noEmit
+        run: npm run lint:check
+
+      - name: Build frontend
+        run: npm run build
 
       - name: Build Windows installer
-        run: npm exec tauri build -- --bundles nsis
+        shell: pwsh
+        run: .\\node_modules\\.bin\\tauri.cmd build -- --bundles nsis
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
