@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches:
-        - main
-        - master
-          - release
+      - main
+      - master
+      - release
 
 jobs:
   build-windows:
@@ -41,12 +41,15 @@ jobs:
             Add-Content -Path $env:GITHUB_PATH -Value $nsisPath
           }
 
-            - name: Install dependencies (including dev)
-              run: npm ci --include=dev --no-audit --no-fund
-            - name: TypeScript check
-              run: npm run lint:check
+      - name: Install dependencies (including dev)
+        run: npm ci --include=dev --no-audit --no-fund
+
+      - name: TypeScript check
+        run: node ./node_modules/typescript/bin/tsc --noEmit
+
       - name: Build frontend
         run: npm run build
+
       - name: Download sing-box sidecar
         run: ./scripts/download-singbox.ps1
 
