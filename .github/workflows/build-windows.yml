@@ -14,15 +14,13 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-2022
-    timeout-minutes: 90
+    timeout-minutes: 60
     defaults:
       run:
         shell: pwsh
     env:
-      CI: 'true'
+      CI: true
       RUST_BACKTRACE: '1'
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: 'false'
 
     steps:
       - name: Checkout repository
@@ -45,7 +43,7 @@ jobs:
       - name: Install NSIS
         run: |
           choco install nsis --no-progress -y
-          $nsisPath = 'C:\Program Files (x86)\NSIS'
+          $nsisPath = "C:\Program Files (x86)\NSIS"
           if (Test-Path $nsisPath) {
             Add-Content -Path $env:GITHUB_PATH -Value $nsisPath
           }
@@ -58,30 +56,20 @@ jobs:
           cargo --version
           makensis -VERSION
 
-      - name: Install frontend dependencies
-        run: |
-          npm config delete production
-          npm config set fund false
-          npm config set audit false
-          if (Test-Path '.\node_modules') { Remove-Item '.\node_modules' -Recurse -Force }
-          npm install --include=dev --no-package-lock
-          npm install --include=dev --no-save react@18.3.1 react-dom@18.3.1 framer-motion@11.18.2 lucide-react@0.511.0 @tauri-apps/api@2.10.1 @tauri-apps/cli@2.8.2 @tauri-apps/cli-win32-x64-msvc@2.8.2 @types/react@18.3.18 @types/react-dom@18.3.5 @vitejs/plugin-react@4.4.1 typescript@5.8.3 vite@6.3.5
-          npm ls react react-dom framer-motion lucide-react @tauri-apps/api @tauri-apps/cli typescript vite --depth=0
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-fund
 
-      - name: Verify local toolchain
+      - name: Verify required packages
         run: |
-          if (!(Test-Path '.\node_modules\typescript\bin\tsc')) { throw 'typescript runtime is missing' }
-          if (!(Test-Path '.\node_modules\vite\bin\vite.js')) { throw 'vite runtime is missing' }
-          if (!(Test-Path '.\node_modules\@tauri-apps\cli\tauri.js')) { throw 'tauri runtime is missing' }
-          node .\node_modules\typescript\bin\tsc --version
-          node .\node_modules\vite\bin\vite.js --version
-          node .\node_modules\@tauri-apps\cli\tauri.js --version
+          node -e "console.log('tsc:', require.resolve('typescript/bin/tsc'))"
+          node -e "console.log('vite:', require.resolve('vite/bin/vite.js'))"
+          node -e "console.log('tauri:', require.resolve('@tauri-apps/cli/tauri.js'))"
 
       - name: Download sing-box sidecar
         run: |
           ./scripts/download-singbox.ps1
-          if (!(Test-Path '.\src-tauri\resources\bin\sing-box.exe')) {
-            throw 'sing-box.exe was not downloaded'
+          if (!(Test-Path ".\src-tauri\resources\bin\sing-box.exe")) {
+            throw "sing-box.exe was not downloaded"
           }
 
       - name: TypeScript check
