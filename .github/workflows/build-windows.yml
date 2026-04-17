@@ -3,18 +3,17 @@ name: Build Windows EXE
 on:
   workflow_dispatch:
   push:
-    branches: [main, master, release]
-
-permissions:
-  contents: read
+    branches:
+      - main
+      - master
+      - release
 
 jobs:
   build-windows:
     runs-on: windows-2022
     timeout-minutes: 60
-    defaults:
-      run:
-        shell: pwsh
+    env:
+      CI: true
 
     steps:
       - name: Checkout repository
@@ -37,16 +36,19 @@ jobs:
       - name: Install NSIS
         run: |
           choco install nsis --no-progress -y
-          $nsisPath = 'C:\Program Files (x86)\NSIS'
+          $nsisPath = "C:\\Program Files (x86)\\NSIS"
           if (Test-Path $nsisPath) {
             Add-Content -Path $env:GITHUB_PATH -Value $nsisPath
           }
 
-      - name: Install frontend dependencies
-        run: npm ci --no-audit --no-fund
+      - name: Install dependencies (including dev)
+        run: npm ci --include=dev --no-audit --no-fund
 
       - name: TypeScript check
-        run: npm run lint:check
+        run: npm exec tsc -- --noEmit
+
+      - name: Build frontend
+        run: npm run build
 
       - name: Download sing-box sidecar
         run: ./scripts/download-singbox.ps1
