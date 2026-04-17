@@ -20,9 +20,7 @@ jobs:
         shell: pwsh
     env:
       CI: true
-      RUST_BACKTRACE: "1"
-      NPM_CONFIG_PRODUCTION: "false"
-      NODE_ENV: development
+      RUST_BACKTRACE: '1'
 
     steps:
       - name: Checkout repository
@@ -58,41 +56,14 @@ jobs:
           cargo --version
           makensis -VERSION
 
-      - name: Install project dependencies
-        run: |
-          npm config delete production
-          npm ci --include=dev --no-audit --no-fund
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-fund
 
-      - name: Force-install local build toolchain
+      - name: Verify required packages
         run: |
-          npm install --no-save --no-audit --no-fund `
-            typescript@^5.8.3 `
-            vite@^6.3.5 `
-            @tauri-apps/cli@^2.8.0 `
-            @vitejs/plugin-react@^4.4.1 `
-            @types/react@^18.3.18 `
-            @types/react-dom@^18.3.5
-
-      - name: Verify local binaries
-        run: |
-          if (!(Test-Path ".\node_modules\.bin\tsc.cmd")) {
-            Write-Host "Contents of node_modules/.bin:"
-            if (Test-Path ".\node_modules\.bin") { Get-ChildItem .\node_modules\.bin | Select-Object Name }
-            throw "tsc.cmd is missing after dependency installation"
-          }
-          if (!(Test-Path ".\node_modules\.bin\vite.cmd")) {
-            Write-Host "Contents of node_modules/.bin:"
-            if (Test-Path ".\node_modules\.bin") { Get-ChildItem .\node_modules\.bin | Select-Object Name }
-            throw "vite.cmd is missing after dependency installation"
-          }
-          if (!(Test-Path ".\node_modules\.bin\tauri.cmd")) {
-            Write-Host "Contents of node_modules/.bin:"
-            if (Test-Path ".\node_modules\.bin") { Get-ChildItem .\node_modules\.bin | Select-Object Name }
-            throw "tauri.cmd is missing after dependency installation"
-          }
-          .\node_modules\.bin\tsc.cmd --version
-          .\node_modules\.bin\vite.cmd --version
-          .\node_modules\.bin\tauri.cmd --version
+          node -e "console.log('tsc:', require.resolve('typescript/bin/tsc'))"
+          node -e "console.log('vite:', require.resolve('vite/bin/vite.js'))"
+          node -e "console.log('tauri:', require.resolve('@tauri-apps/cli/tauri.js'))"
 
       - name: Download sing-box sidecar
         run: |
@@ -102,13 +73,13 @@ jobs:
           }
 
       - name: TypeScript check
-        run: .\node_modules\.bin\tsc.cmd --noEmit
+        run: npm run lint:check
 
       - name: Build frontend
         run: npm run build
 
       - name: Build Windows installer
-        run: .\node_modules\.bin\tauri.cmd build -- --bundles nsis
+        run: npm run tauri build -- --bundles nsis
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
