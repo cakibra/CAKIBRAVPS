@@ -44,8 +44,9 @@ jobs:
       - name: Install dependencies (including dev)
         run: npm ci --include=dev --no-audit --no-fund
 
-      - name: TypeScript check
-        run: npm exec tsc -- --noEmit
+  -     - name: TypeScript check
+      run: npm run lint:check
+
 
       - name: Build frontend
         run: npm run build
