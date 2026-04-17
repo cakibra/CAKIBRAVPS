@@ -2,12 +2,17 @@
 name = "cakibra-sbp"
 version = "0.1.0"
 description = "CAKIBRA SBP"
-authors = ["CAKIBRATEAM"]
+authors = ["OpenAI"]
 edition = "2021"
 
 [lib]
 name = "cakibra_sbp_lib"
+path = "src/lib.rs"
 crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "cakibra-sbp"
+path = "src/main.rs"
 
 [build-dependencies]
 tauri-build = { version = "2.0.1" }
