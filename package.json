@@ -11,16 +11,16 @@
     "lint:check": "node ./node_modules/typescript/bin/tsc --noEmit"
   },
   "dependencies": {
-    "@tauri-apps/api": "2.8.0",
-    "@tauri-apps/cli": "2.8.2",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
-    "@vitejs/plugin-react": "^4.4.1",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.5",
+    "@tauri-apps/api": "^2.8.0",
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.511.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "@tauri-apps/cli": "2.8.2",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "@vitejs/plugin-react": "4.4.1",
+    "typescript": "5.8.3",
+    "vite": "6.3.5"
   }
 }
