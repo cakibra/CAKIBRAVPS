@@ -14,12 +14,12 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-2022
-    timeout-minutes: 60
+    timeout-minutes: 90
     defaults:
       run:
         shell: pwsh
     env:
-      CI: true
+      CI: 'true'
       RUST_BACKTRACE: '1'
 
     steps:
@@ -43,7 +43,7 @@ jobs:
       - name: Install NSIS
         run: |
           choco install nsis --no-progress -y
-          $nsisPath = "C:\Program Files (x86)\NSIS"
+          $nsisPath = 'C:\Program Files (x86)\NSIS'
           if (Test-Path $nsisPath) {
             Add-Content -Path $env:GITHUB_PATH -Value $nsisPath
           }
@@ -57,19 +57,24 @@ jobs:
           makensis -VERSION
 
       - name: Install npm dependencies
-        run: npm ci --no-audit --no-fund
-
-      - name: Verify required packages
         run: |
-          node -e "console.log('tsc:', require.resolve('typescript/bin/tsc'))"
-          node -e "console.log('vite:', require.resolve('vite/bin/vite.js'))"
-          node -e "console.log('tauri:', require.resolve('@tauri-apps/cli/tauri.js'))"
+          npm ci --include=dev --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund typescript@5.8.3 vite@6.3.5 @tauri-apps/cli@2.8.2 @tauri-apps/cli-win32-x64-msvc@2.8.2 @vitejs/plugin-react@4.4.1 @types/react@18.3.18 @types/react-dom@18.3.5
+
+      - name: Verify local toolchain
+        run: |
+          if (!(Test-Path '.\node_modules\typescript\bin\tsc')) { throw 'typescript runtime is missing' }
+          if (!(Test-Path '.\node_modules\vite\bin\vite.js')) { throw 'vite runtime is missing' }
+          if (!(Test-Path '.\node_modules\@tauri-apps\cli\tauri.js')) { throw 'tauri runtime is missing' }
+          node .\node_modules\typescript\bin\tsc --version
+          node .\node_modules\vite\bin\vite.js --version
+          node .\node_modules\@tauri-apps\cli\tauri.js --version
 
       - name: Download sing-box sidecar
         run: |
           ./scripts/download-singbox.ps1
-          if (!(Test-Path ".\src-tauri\resources\bin\sing-box.exe")) {
-            throw "sing-box.exe was not downloaded"
+          if (!(Test-Path '.\src-tauri\resources\bin\sing-box.exe')) {
+            throw 'sing-box.exe was not downloaded'
           }
 
       - name: TypeScript check
