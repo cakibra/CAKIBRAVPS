@@ -3,10 +3,7 @@ name: Build Windows EXE
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-      - master
-      - release
+    branches: [main, master, release]
 
 permissions:
   contents: read
@@ -18,10 +15,6 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    env:
-      CI: true
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: "false"
 
     steps:
       - name: Checkout repository
@@ -44,33 +37,19 @@ jobs:
       - name: Install NSIS
         run: |
           choco install nsis --no-progress -y
-          $nsisPath = "C:\Program Files (x86)\NSIS"
+          $nsisPath = 'C:\Program Files (x86)\NSIS'
           if (Test-Path $nsisPath) {
             Add-Content -Path $env:GITHUB_PATH -Value $nsisPath
           }
 
-      - name: Install dependencies
-        run: |
-          npm config delete production
-          npm ci --no-audit --no-fund
-
-      - name: Show installed Tauri versions
-        run: |
-          node -e "console.log('api', require('./node_modules/@tauri-apps/api/package.json').version)"
-          node -e "console.log('cli', require('./node_modules/@tauri-apps/cli/package.json').version)"
-
-      - name: Download sing-box sidecar
-        run: |
-          ./scripts/download-singbox.ps1
-          if (!(Test-Path "./src-tauri/resources/bin/sing-box.exe")) {
-            throw "sing-box.exe was not downloaded"
-          }
+      - name: Install frontend dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: TypeScript check
         run: npm run lint:check
 
-      - name: Build frontend
-        run: npm run build
+      - name: Download sing-box sidecar
+        run: ./scripts/download-singbox.ps1
 
       - name: Build Windows installer
         run: npm run tauri build -- --bundles nsis
