@@ -2,21 +2,21 @@ name: Build Windows EXE
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
-      - release
 
 jobs:
   build-windows:
-    runs-on: windows-2022
-    timeout-minutes: 60
+    runs-on: windows-latest
+
+    permissions:
+      contents: read
+
     env:
-      CI: true
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: "false"
+      npm_config_registry: "https://registry.npmjs.org/"
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -24,60 +24,53 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          registry-url: https://registry.npmjs.org/
 
-      - name: Setup Rust stable
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Rust build
+      - name: Cache Rust
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: ./src-tauri -> target
+          workspaces: "./src-tauri -> target"
 
-      - name: Install NSIS
-        shell: pwsh
+      - name: Clean uploaded local folders
+        shell: powershell
         run: |
-          choco install nsis --no-progress -y
-          $nsisPath = "C:\Program Files (x86)\NSIS"
-          if (Test-Path $nsisPath) {
-            Add-Content -Path $env:GITHUB_PATH -Value $nsisPath
-          }
-
-      - name: Reset npm state
-        shell: pwsh
-        run: |
-          if (Test-Path node_modules) {
-            Remove-Item node_modules -Recurse -Force
-          }
-          npm cache clean --force
-
-      - name: Install dependencies
-        run: npm install --include=dev --no-audit --no-fund
-
-      - name: Force-install required frontend packages
-        run: >-
-          npm install --no-audit --no-fund
-          react@18.3.1 react-dom@18.3.1 lucide-react@0.511.0 framer-motion@11.15.0 @tauri-apps/api@2.8.0
-          && npm install --save-dev --no-audit --no-fund
-          typescript@5.8.3 vite@6.3.5 @vitejs/plugin-react@4.4.1 @types/react@18.3.18 @types/react-dom@18.3.5 @tauri-apps/cli@2.8.2
-
-      - name: TypeScript check
-        run: npm run lint:check
-
-      - name: Build frontend
-        run: npm run build
+          if (Test-Path node_modules) { Remove-Item -Recurse -Force node_modules }
+          if (Test-Path dist) { Remove-Item -Recurse -Force dist }
 
       - name: Download sing-box sidecar
-        shell: pwsh
-        run: ./scripts/download-singbox.ps1
+        shell: powershell
+        run: .\scripts\download-singbox.ps1
 
-      - name: Build Windows installer
-        run: npm run tauri build -- --bundles nsis
+      - name: Install frontend dependencies
+        shell: powershell
+        run: npm ci --include=dev --no-audit --no-fund
 
-      - name: Upload Windows artifacts
+      - name: Verify TypeScript compiler
+        shell: powershell
+        run: |
+          if (!(Test-Path ".\node_modules\.bin\tsc.cmd")) {
+            Write-Host "node_modules/.bin contents:"
+            if (Test-Path ".\node_modules\.bin") { Get-ChildItem ".\node_modules\.bin" }
+            Write-Error "TypeScript compiler was not installed"
+            exit 1
+          }
+
+      - name: Type check
+        shell: powershell
+        run: .\node_modules\.bin\tsc.cmd --noEmit
+
+      - name: Build Tauri app
+        shell: powershell
+        run: .\node_modules\.bin\tauri.cmd build --bundles nsis
+
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cakibra-sbp-windows
-          if-no-files-found: error
+          name: CAKIBRA-SBP-Windows
           path: |
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/*.exe
+          if-no-files-found: error
