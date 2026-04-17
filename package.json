@@ -1,14 +1,14 @@
-{
+
   "name": "cakibra-sbp",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 1420",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "node ./node_modules/@tauri-apps/cli/tauri.js",
-    "lint:check": "npm exec tsc -- --noEmit"
+  "dev": "vite --port 1420",
+  "build": "node ./node_modules/typescript/bin/tsc && vite build",
+  "preview": "vite preview",
+  "tauri": "node ./node_modules/@tauri-apps/cli/tauri.js",
+  "lint:check": "node ./node_modules/typescript/bin/tsc --noEmit"
   },
   "dependencies": {
     "@tauri-apps/api": "2.8.0",
